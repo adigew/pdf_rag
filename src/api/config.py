@@ -19,9 +19,13 @@ class Settings(BaseSettings):
     EMBEDDING_MODEL: str = "nomic-embed-text"
     DEFAULT_CHAT_MODEL: str = "llama3.2"
 
+    # Logging
+    LOG_LEVEL: str = "INFO"
+
     class Config:
         """Pydantic config."""
         env_file = ".env"
+        extra = "ignore"
 
 
 settings = Settings()

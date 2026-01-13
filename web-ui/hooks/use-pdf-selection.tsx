@@ -6,8 +6,11 @@ import {
   useState,
   useCallback,
   type ReactNode,
+  useEffect,
 } from "react";
 import { useLocalStorage } from "usehooks-ts";
+import useSWR from "swr";
+import { fetcher } from "@/lib/utils";
 
 interface PDF {
   pdf_id: string;
@@ -30,55 +33,109 @@ const PDFSelectionContext = createContext<PDFSelectionContextType | undefined>(
   undefined
 );
 
-export function PDFSelectionProvider({ children }: { children: ReactNode }) {
-  // Use localStorage to persist selection across page reloads
+export function PDFSelectionProvider({
+  children,
+  chatId,
+}: {
+  children: ReactNode;
+  chatId?: string;
+}) {
   const [selectedPdfIds, setSelectedPdfIds] = useLocalStorage<string[]>(
-    "selected-pdf-ids",
+    `selected-pdf-ids-${chatId || "global"}`,
     []
+  );
+
+  // Sync with backend if chatId is provided
+  const { data: remotePdfIds, mutate: mutateRemote } = useSWR(
+    chatId ? `/api/pdfs?chatId=${chatId}` : null,
+    fetcher,
+    {
+      onSuccess: (data) => {
+        if (data?.pdfIds) {
+          setSelectedPdfIds(data.pdfIds);
+        }
+      },
+    }
+  );
+
+  const syncSelectedPdfs = useCallback(
+    async (pdfIds: string[]) => {
+      if (chatId) {
+        try {
+          await fetch(`/api/pdfs?chatId=${chatId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ pdfIds }),
+          });
+          mutateRemote({ pdfIds });
+        } catch (error) {
+          console.error("Failed to sync PDFs with backend", error);
+        }
+      }
+    },
+    [chatId, mutateRemote]
   );
 
   const togglePdf = useCallback(
     (pdfId: string) => {
-      setSelectedPdfIds((prev) =>
-        prev.includes(pdfId)
-          ? prev.filter((id) => id !== pdfId)
-          : [...prev, pdfId]
-      );
+      const newSelected = selectedPdfIds.includes(pdfId)
+        ? selectedPdfIds.filter((id) => id !== pdfId)
+        : [...selectedPdfIds, pdfId];
+      setSelectedPdfIds(newSelected);
+      syncSelectedPdfs(newSelected);
     },
-    [setSelectedPdfIds]
+    [selectedPdfIds, setSelectedPdfIds, syncSelectedPdfs]
   );
 
   const selectPdf = useCallback(
     (pdfId: string) => {
-      setSelectedPdfIds((prev) =>
-        prev.includes(pdfId) ? prev : [...prev, pdfId]
-      );
+      if (!selectedPdfIds.includes(pdfId)) {
+        const newSelected = [...selectedPdfIds, pdfId];
+        setSelectedPdfIds(newSelected);
+        syncSelectedPdfs(newSelected);
+      }
     },
-    [setSelectedPdfIds]
+    [selectedPdfIds, setSelectedPdfIds, syncSelectedPdfs]
   );
 
   const deselectPdf = useCallback(
     (pdfId: string) => {
-      setSelectedPdfIds((prev) => prev.filter((id) => id !== pdfId));
+      if (selectedPdfIds.includes(pdfId)) {
+        const newSelected = selectedPdfIds.filter((id) => id !== pdfId);
+        setSelectedPdfIds(newSelected);
+        syncSelectedPdfs(newSelected);
+      }
     },
-    [setSelectedPdfIds]
+    [selectedPdfIds, setSelectedPdfIds, syncSelectedPdfs]
   );
 
   const selectAll = useCallback(
     (pdfIds: string[]) => {
       setSelectedPdfIds(pdfIds);
+      syncSelectedPdfs(pdfIds);
     },
-    [setSelectedPdfIds]
+    [setSelectedPdfIds, syncSelectedPdfs]
   );
 
   const clearSelection = useCallback(() => {
     setSelectedPdfIds([]);
-  }, [setSelectedPdfIds]);
+    syncSelectedPdfs([]);
+  }, [setSelectedPdfIds, syncSelectedPdfs]);
 
   const isSelected = useCallback(
     (pdfId: string) => selectedPdfIds.includes(pdfId),
     [selectedPdfIds]
   );
+
+  // When chatId changes, reset selection from backend
+  useEffect(() => {
+    if (chatId) {
+      mutateRemote();
+    } else {
+      // If no chat, clear selection
+      setSelectedPdfIds([]);
+    }
+  }, [chatId, mutateRemote, setSelectedPdfIds]);
 
   return (
     <PDFSelectionContext.Provider

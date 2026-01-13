@@ -81,7 +81,7 @@ export default function RootLayout({
         >
           <Toaster position="top-center" />
           <SessionProvider>
-            <PDFSelectionProvider>{children}</PDFSelectionProvider>
+            {children}
           </SessionProvider>
         </ThemeProvider>
       </body>

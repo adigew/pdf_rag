@@ -8,6 +8,7 @@ import { DataStreamHandler } from "@/components/data-stream-handler";
 import { getDefaultChatModel } from "@/lib/ai/models";
 import { getChatById, getMessagesByChatId } from "@/lib/db/queries";
 import { convertToUIMessages } from "@/lib/utils";
+import { PDFSelectionProvider } from "@/hooks/use-pdf-selection";
 
 export default function Page(props: { params: Promise<{ id: string }> }) {
   return (
@@ -17,7 +18,7 @@ export default function Page(props: { params: Promise<{ id: string }> }) {
   );
 }
 
-async function ChatPage({ params }: { params: Promise<{ id: string }> }) {
+async function ChatPage({ params }: { params: Promise<{ id:string }> }) {
   const { id } = await params;
   const chat = await getChatById({ id });
 
@@ -55,14 +56,14 @@ async function ChatPage({ params }: { params: Promise<{ id: string }> }) {
 
   return (
     <>
-      <Chat
-        autoResume={true}
-        id={chat.id}
-        initialChatModel={defaultModel}
-        initialMessages={uiMessages}
-        initialVisibilityType={chat.visibility}
-        isReadonly={session?.user?.id !== chat.userId}
-      />
+        <Chat
+          autoResume={true}
+          id={chat.id}
+          initialChatModel={defaultModel}
+          initialMessages={uiMessages}
+          initialVisibilityType={chat.visibility}
+          isReadonly={session?.user?.id !== chat.userId}
+        />
       <DataStreamHandler />
     </>
   );

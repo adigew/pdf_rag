@@ -17,7 +17,7 @@ class PDFService:
 
     def __init__(self):
         """Initialize PDF service."""
-        self.doc_processor = DocumentProcessor(chunk_size=7500, chunk_overlap=100)
+        self.doc_processor = DocumentProcessor(chunk_size=1000, chunk_overlap=100)
         self.vector_store = VectorStore(
             embedding_model="nomic-embed-text",
             persist_directory=settings.VECTOR_DB_DIR

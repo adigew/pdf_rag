@@ -12,7 +12,7 @@ Base.metadata.create_all(bind=engine)
 
 # Initialize FastAPI
 app = FastAPI(
-    title="Ollama PDF RAG API",
+    title="PDF RAG API",
     description="REST API for PDF-based RAG with Ollama",
     version="1.0.0"
 )
@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 def root():
     """Root endpoint."""
     return {
-        "message": "Ollama PDF RAG API",
+        "message": "PDF RAG API",
         "docs": "/docs",
         "health": "/api/v1/health"
     }

@@ -39,7 +39,7 @@ PERSIST_DIRECTORY = os.path.join("data", "vectors")
 
 # Streamlit page configuration
 st.set_page_config(
-    page_title="Ollama PDF RAG Streamlit UI",
+    page_title="PDF RAG Streamlit UI",
     page_icon="🎈",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -102,7 +102,7 @@ def create_vector_db(file_upload) -> Chroma:
         loader = UnstructuredPDFLoader(path)
         data = loader.load()
 
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=7500, chunk_overlap=100)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=2000, chunk_overlap=200)
     chunks = text_splitter.split_documents(data)
     logger.info("Document split into chunks")
 
@@ -143,7 +143,7 @@ def process_and_store_pdf(file_upload, pdf_id: str, is_sample: bool = False):
     # Load and chunk
     loader = UnstructuredPDFLoader(path)
     data = loader.load()
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=7500, chunk_overlap=100)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=2000, chunk_overlap=200)
     chunks = text_splitter.split_documents(data)
     logger.info(f"Document split into {len(chunks)} chunks")
 
@@ -235,7 +235,7 @@ def process_question_multi_pdf(
     # Query prompt
     QUERY_PROMPT = PromptTemplate(
         input_variables=["question"],
-        template="""You are an AI language model assistant. Your task is to generate 2
+        template="""You are an AI language model assistant. Your task is to generate 3
         different versions of the given user question to retrieve relevant documents from
         a vector database. By generating multiple perspectives on the user question, your
         goal is to help the user overcome some of the limitations of the distance-based
@@ -249,13 +249,13 @@ def process_question_multi_pdf(
         vector_db = pdf_data["vector_db"]
 
         retriever = MultiQueryRetriever.from_llm(
-            vector_db.as_retriever(search_kwargs={"k": 3}),
+            vector_db.as_retriever(search_kwargs={"k": 5}),
             llm,
             prompt=QUERY_PROMPT
         )
 
         try:
-            docs = retriever.get_relevant_documents(question)
+            docs = retriever.invoke(question)
             logger.info(f"Retrieved {len(docs)} documents from {pdf_data['name']}")
             # Ensure metadata
             for doc in docs:
@@ -278,20 +278,23 @@ def process_question_multi_pdf(
     formatted_context = "\n---\n".join(context_parts)
 
     # RAG prompt with source awareness
-    template = """Answer the question based ONLY on the following context from multiple PDF documents.
-    Each section is marked with its source document.
+    template = """You are a helpful assistant for question-answering over PDF documents.
+    Your task is to answer the user's question based *exclusively* on the provided context.
+    The context below is extracted from one or more PDF documents. Each piece of context is marked with its source file.
 
-    When answering:
-    1. Cite the source document name for each piece of information
-    2. If information comes from multiple sources, mention all relevant sources
-    3. If sources contradict, note the discrepancy and cite both
+    **Do not use any of your prior knowledge.** If the answer is not present in the context, you MUST state that you cannot find the answer in the provided documents.
 
-    Context:
+    When forming your answer, you MUST cite the source for each piece of information you use. For example: "According to [Source: document.pdf], the sky is blue."
+
+    ---
+    CONTEXT:
     {context}
+    ---
 
-    Question: {question}
+    QUESTION: {question}
 
-    Answer (include source citations):"""
+    ---
+    ANSWER (remember to cite sources from the context):"""
 
     prompt = ChatPromptTemplate.from_template(template)
     chain = (
@@ -337,7 +340,7 @@ def process_question(question: str, vector_db: Chroma, selected_model: str) -> s
     # Query prompt template
     QUERY_PROMPT = PromptTemplate(
         input_variables=["question"],
-        template="""You are an AI language model assistant. Your task is to generate 2
+        template="""You are an AI language model assistant. Your task is to generate 3
         different versions of the given user question to retrieve relevant documents from
         a vector database. By generating multiple perspectives on the user question, your
         goal is to help the user overcome some of the limitations of the distance-based
@@ -347,15 +350,26 @@ def process_question(question: str, vector_db: Chroma, selected_model: str) -> s
 
     # Set up retriever
     retriever = MultiQueryRetriever.from_llm(
-        vector_db.as_retriever(), 
+        vector_db.as_retriever(search_kwargs={"k": 5}), 
         llm,
         prompt=QUERY_PROMPT
     )
 
     # RAG prompt template
-    template = """Answer the question based ONLY on the following context:
+    template = """You are a helpful assistant for question-answering.
+    Your task is to answer the user's question based *exclusively* on the provided context.
+
+    **Do not use any of your prior knowledge.** If the answer is not present in the context, you MUST state that you cannot find the answer in the provided documents.
+
+    ---
+    CONTEXT:
     {context}
-    Question: {question}
+    ---
+
+    QUESTION: {question}
+
+    ---
+    ANSWER:
     """
 
     prompt = ChatPromptTemplate.from_template(template)
@@ -425,7 +439,7 @@ def main() -> None:
     """
     Main function to run the Streamlit application.
     """
-    st.subheader("🧠 Ollama PDF RAG playground", divider="gray", anchor=False)
+    st.subheader("🧠 PDF RAG playground", divider="gray", anchor=False)
 
     # Get available models
     models_info = ollama.list()

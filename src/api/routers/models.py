@@ -15,53 +15,43 @@ def is_chat_model(model_name: str, model_size: int) -> bool:
     Intelligently detect if a model supports chat (vs embedding-only).
 
     Uses multiple heuristics:
-    1. Size check: Embedding models are typically < 1GB
-    2. Name patterns: Check for common embedding model indicators
-    3. Model info: Try to get model details from Ollama
+    1. Name patterns: Check for common embedding model indicators
+    2. Size check: Embedding models are typically < 1GB
     """
+    model_lower = model_name.lower()
 
-    # Heuristic 1: Size check
-    # Embedding models are typically small (< 1GB)
-    # Chat models are usually > 1GB
-    SIZE_THRESHOLD = 1_000_000_000  # 1 GB
-    if model_size < SIZE_THRESHOLD:
-        logger.info(f"🔍 Model '{model_name}' is small ({model_size / 1e9:.2f}GB), likely embedding model")
-        return False
-
-    # Heuristic 2: Try to get model details
-    try:
-        model_info = ollama.show(model_name)
-
-        # Check model parameters/template
-        # Chat models have chat templates, embedding models don't
-        if hasattr(model_info, 'template'):
-            template = model_info.template if isinstance(model_info.template, str) else ''
-            if template and len(template) > 0:
-                logger.info(f"✅ Model '{model_name}' has chat template, is chat model")
-                return True
-
-        # Check modelfile for embedding-specific configurations
-        if hasattr(model_info, 'modelfile'):
-            modelfile = model_info.modelfile if isinstance(model_info.modelfile, str) else ''
-            if 'embed' in modelfile.lower():
-                logger.info(f"🔍 Model '{model_name}' has 'embed' in modelfile, likely embedding model")
-                return False
-
-    except Exception as e:
-        logger.debug(f"Could not get detailed info for {model_name}: {e}")
-
-    # Heuristic 3: Name-based detection (last resort)
+    # Heuristic 1: Explicit name-based exclusion (Strongest Signal)
     # Common embedding model name patterns
     embedding_indicators = [
         'embed', 'embedding', 'bge', 'e5', 'sentence',
         'mpnet', 'minilm', 'retrieval'
     ]
 
-    model_lower = model_name.lower()
     for indicator in embedding_indicators:
         if indicator in model_lower:
             logger.info(f"🔍 Model '{model_name}' name contains '{indicator}', likely embedding model")
             return False
+
+    # Heuristic 2: Size check (Secondary Signal)
+    # Embedding models are typically small (< 400MB)
+    # Some small chat models (like TinyLlama) can be around 600MB-1GB
+    # So we lower the threshold to avoid filtering valid tiny LLMs
+    SIZE_THRESHOLD = 400_000_000  # 400 MB
+    if model_size < SIZE_THRESHOLD:
+        logger.info(f"🔍 Model '{model_name}' is very small ({model_size / 1e9:.2f}GB), likely embedding model")
+        return False
+        
+    # Heuristic 3: Try to get model details (Optional/Slower, but accurate)
+    try:
+        model_info = ollama.show(model_name)
+        # Check modelfile for embedding-specific configurations
+        if hasattr(model_info, 'modelfile'):
+            modelfile = model_info.modelfile if isinstance(model_info.modelfile, str) else ''
+            if 'embed' in modelfile.lower():
+                logger.info(f"🔍 Model '{model_name}' has 'embed' in modelfile, likely embedding model")
+                return False
+    except Exception as e:
+        logger.debug(f"Could not get detailed info for {model_name}: {e}")
 
     # Default: assume it's a chat model
     logger.info(f"✅ Model '{model_name}' appears to be a chat model")

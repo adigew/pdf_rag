@@ -220,7 +220,7 @@ function PureMultimodalInput({
           const formData = new FormData();
           formData.append("file", file);
 
-          const response = await fetch("http://localhost:8001/api/v1/pdfs/upload", {
+          const response = await fetch("http://127.0.0.1:8001/api/v1/pdfs/upload", {
             method: "POST",
             body: formData,
           });
@@ -478,7 +478,7 @@ function PureModelSelectorCompact({
   useEffect(() => {
     const fetchModels = async () => {
       try {
-        const response = await fetch("http://localhost:8001/api/v1/models");
+        const response = await fetch("http://127.0.0.1:8001/api/v1/models");
         const models = await response.json();
 
         const formattedModels = models.map((model: any) => ({

@@ -60,6 +60,29 @@ ollama_pdf_rag/
 └── start_all.sh              # Start all services
 ```
 
+## 🛠️ Technical Stack
+
+This project uses a modern stack to build a robust RAG pipeline.
+
+- **Core Framework**: The entire application is orchestrated using **LangChain**, which provides the building blocks for creating and customizing the RAG pipeline.
+
+- **RAG Pipeline**:
+  - **Retrieval Strategy**: Implements a **Multi-Query Retriever**. This technique uses the LLM to generate multiple variations of the user's question, broadening the search to find more relevant document chunks.
+  - **Chain**: The RAG chain is constructed using the LangChain Expression Language (LCEL), which offers a composable and transparent way to build complex pipelines.
+
+- **LLM & Embeddings**:
+  - **LLMs**: The application integrates with local large language models via **Ollama**. The default model is `llama2`, but it can be configured to use any model available in your Ollama library.
+  - **Embedding Model**: Text embeddings are generated using `nomic-embed-text` through Ollama, which is a strong open-source model designed for retrieval tasks.
+  - **Vector Store**: **ChromaDB** is used as the vector store to efficiently index and search the document embeddings.
+
+- **Document Processing**:
+  - **PDF Loading**: PDFs are loaded using `UnstructuredPDFLoader`, a powerful tool that can extract text from complex layouts, including tables and images.
+  - **Text Splitting**: Documents are chunked using the `RecursiveCharacterTextSplitter`, which intelligently splits text while trying to keep related content together.
+
+- **API & Frontend**:
+  - **Backend**: A **FastAPI** server provides a robust REST API for all RAG functionalities, including document management and querying.
+  - **Frontend**: The primary user interface is a modern web application built with **Next.js** and **React**, offering a rich, interactive user experience. A secondary interface is also available, built with **Streamlit**.
+
 ## 🚀 Getting Started
 
 ### Prerequisites

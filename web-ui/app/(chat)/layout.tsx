@@ -5,6 +5,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { DataStreamProvider } from "@/components/data-stream-provider";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { auth } from "../(auth)/auth";
+import { PDFSelectionProvider } from "@/hooks/use-pdf-selection";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -28,8 +29,10 @@ async function SidebarWrapper({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider defaultOpen={!isCollapsed}>
-      <AppSidebar user={session?.user} />
-      <SidebarInset>{children}</SidebarInset>
+      <PDFSelectionProvider>
+        <AppSidebar user={session?.user} />
+        <SidebarInset>{children}</SidebarInset>
+      </PDFSelectionProvider>
     </SidebarProvider>
   );
 }

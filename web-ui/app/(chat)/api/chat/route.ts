@@ -3,6 +3,7 @@ import { getDefaultChatModel } from "@/lib/ai/models";
 import { createUIMessageStream, createUIMessageStreamResponse } from "ai";
 import { auth } from "@/app/(auth)/auth";
 import {
+  deleteChatById,
   getChatById,
   saveChat,
   saveMessages,
@@ -313,5 +314,39 @@ It looks like your question might be about a document, but you haven't selected 
     });
 
     return createUIMessageStreamResponse({ stream: errorStream });
+  }
+}
+
+export async function DELETE(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
+
+  if (!id) {
+    return new Response("Not Found", { status: 404 });
+  }
+
+  const session = await auth();
+
+  if (!session || !session.user) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
+  try {
+    const chat = await getChatById({ id });
+
+    if (!chat) {
+      return new Response("Chat not found", { status: 404 });
+    }
+
+    if (chat.userId !== session.user.id) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+
+    await deleteChatById({ id });
+
+    return new Response("Chat deleted", { status: 200 });
+  } catch (error) {
+    console.error("An error occurred while deleting the chat:", error);
+    return new Response("Internal Server Error", { status: 500 });
   }
 }

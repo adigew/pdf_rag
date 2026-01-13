@@ -19,7 +19,7 @@ export const chatModels: ChatModel[] = [
 // Fetch available Ollama models from backend
 export async function fetchOllamaModels(): Promise<ChatModel[]> {
   try {
-    const response = await fetch("http://localhost:8001/api/v1/models");
+    const response = await fetch("http://127.0.0.1:8001/api/v1/models");
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }

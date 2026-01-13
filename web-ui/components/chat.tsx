@@ -83,6 +83,7 @@ export function Chat({
   }, [currentModelId]);
 
   useEffect(() => {
+    console.log("Selected PDF IDs updated in chat.tsx:", selectedPdfIds);
     selectedPdfIdsRef.current = selectedPdfIds;
   }, [selectedPdfIds]);
 
@@ -103,6 +104,7 @@ export function Chat({
       api: "/api/chat",
       fetch: fetchWithErrorHandlers,
       prepareSendMessagesRequest(request) {
+        console.log("Sending selected PDF IDs:", selectedPdfIdsRef.current);
         return {
           body: {
             id: request.id,

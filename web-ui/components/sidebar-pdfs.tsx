@@ -37,7 +37,7 @@ interface PDF {
 
 export function SidebarPDFs() {
   const { data: pdfs, mutate, isLoading } = useSWR<PDF[]>(
-    "http://localhost:8001/api/v1/pdfs",
+    "http://127.0.0.1:8001/api/v1/pdfs",
     fetcher,
     {
       refreshInterval: 5000, // Refresh every 5 seconds
@@ -68,7 +68,7 @@ export function SidebarPDFs() {
     setShowDeleteDialog(false);
 
     const deletePromise = fetch(
-      `http://localhost:8001/api/v1/pdfs/${pdfToDelete}`,
+      `http://127.0.0.1:8001/api/v1/pdfs/${pdfToDelete}`,
       {
         method: "DELETE",
       }
